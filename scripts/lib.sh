@@ -14,18 +14,20 @@ GITHUB_OWNER="lma-hh-01"
 CLUSTER_NAME="testbed"
 APP_NAMESPACE="example-app"
 
-# Laufzeitdaten (Zertifikate, Passwoerter, kubeconfigs). Wird von "make down" geloescht.
+# Laufzeitdaten (Passwoerter, kubeconfigs). Wird von "make down" geloescht.
 WORK_DIR="$TESTBED_DIR/.work"
 ADMIN_KUBECONFIG="$WORK_DIR/admin.kubeconfig"
 DEPLOYER_KUBECONFIG="$WORK_DIR/deployer.kubeconfig"
 
 # Die Registry zot ist vom Rechner aus unter localhost:5001 erreichbar,
-# aus dem Cluster heraus unter zot:5000 (Container-Name im Docker-Netz "kind").
+# aus dem Cluster heraus unter zot.localhost:5000 (Alias im Docker-Netz "kind").
+# Die Endung .localhost sorgt dafuer, dass Kyverno die Registry ohne TLS anspricht,
+# siehe start_zot in cluster-up.sh.
 ZOT_CONTAINER="zot"
 ZOT_HOST_ADDRESS="localhost:5001"
-ZOT_CLUSTER_ADDRESS="zot:5000"
+ZOT_CLUSTER_HOST="zot.localhost"
+ZOT_CLUSTER_ADDRESS="$ZOT_CLUSTER_HOST:5000"
 ZOT_USER="uploader"
-TLS_DIR="$WORK_DIR/tls"
 ZOT_PASSWORD_FILE="$WORK_DIR/zot-password"
 ORAS_AUTH_FILE="$WORK_DIR/oras-auth.json"
 
