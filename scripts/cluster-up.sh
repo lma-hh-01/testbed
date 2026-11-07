@@ -56,7 +56,9 @@ start_zot() {
 }
 
 login_to_zot() {
-  oras login "$ZOT_HOST_ADDRESS" --registry-config "$ORAS_AUTH_FILE" --ca-file "$TLS_DIR/ca.crt" \
+  # ORAS spricht localhost sonst automatisch ohne TLS an.
+  oras login "$ZOT_HOST_ADDRESS" --registry-config "$ORAS_AUTH_FILE" \
+    --plain-http=false --ca-file "$TLS_DIR/ca.crt" \
     --username "$ZOT_USER" --password-stdin < "$ZOT_PASSWORD_FILE" >/dev/null
   info "ORAS ist fuer Schreibzugriffe angemeldet."
 }

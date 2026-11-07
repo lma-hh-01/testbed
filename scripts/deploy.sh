@@ -20,11 +20,13 @@ find_last_successful_commit() {
 }
 
 # ORAS bekommt eine eigene Login-Datei. Damit bleibt die Docker-Konfiguration des
-# Rechners unberuehrt, und ghcr wird anonym gelesen.
+# Rechners unberuehrt, und ghcr wird anonym gelesen. localhost spricht ORAS sonst
+# automatisch ohne TLS an.
 copy_to_zot() {
   local source="$1"
   local target_tag="$2"
-  oras cp --recursive --registry-config "$ORAS_AUTH_FILE" \
+  oras cp --recursive \
+    --from-registry-config "$ORAS_AUTH_FILE" --to-registry-config "$ORAS_AUTH_FILE" \
     --to-plain-http=false --to-ca-file "$TLS_DIR/ca.crt" \
     "$source" "$ZOT_HOST_ADDRESS/$ZOT_REPOSITORY:$target_tag" >/dev/null
 }
