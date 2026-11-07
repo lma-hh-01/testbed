@@ -107,7 +107,7 @@ apply_policies() {
   step "Kyverno-Richtlinien der Variante $VARIANT anwenden (aus secure-workflows)"
   admin_kubectl apply -f "$policy_dir"
   # Erst wenn Kyverno eine Richtlinie als bereit meldet, greift sie an der Admission.
-  admin_kubectl wait imagevalidatingpolicies --all \
+  admin_kubectl wait -f "$policy_dir" \
     --for jsonpath='{.status.conditionStatus.ready}'=true --timeout 60s >/dev/null
   info "Richtlinien sind aktiv."
 }
