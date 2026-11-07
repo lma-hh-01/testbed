@@ -102,6 +102,16 @@ install_kyverno() {
   info "Kyverno laeuft."
 }
 
+apply_policies() {
+  local policy_dir="$SECURE_WORKFLOWS_DIR/policies/$VARIANT"
+  step "Kyverno-Richtlinien der Variante $VARIANT anwenden (aus secure-workflows)"
+  admin_kubectl apply -f "$policy_dir"
+  # Erst wenn Kyverno eine Richtlinie als bereit meldet, greift sie an der Admission.
+  admin_kubectl wait imagevalidatingpolicies --all \
+    --for jsonpath='{.status.conditionStatus.ready}'=true --timeout 60s >/dev/null
+  info "Richtlinien sind aktiv."
+}
+
 # --- Ablauf -------------------------------------------------------------------
 
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER_NAME"; then
@@ -121,6 +131,7 @@ create_deployer
 
 if [ "$VARIANT" != "v0" ]; then
   install_kyverno
+  apply_policies
 fi
 
 step "Fertig: Testbed fuer Variante $VARIANT steht"
