@@ -1,0 +1,35 @@
+{
+  "distSpecVersion": "1.1.1",
+  "storage": {
+    "rootDirectory": "/var/lib/registry"
+  },
+  "http": {
+    "address": "0.0.0.0",
+    "port": "5000",
+    "tls": {
+      "cert": "/etc/zot/tls/server.crt",
+      "key": "/etc/zot/tls/server.key"
+    },
+    "auth": {
+      "htpasswd": {
+        "path": "/etc/zot/htpasswd"
+      }
+    },
+    "accessControl": {
+      "repositories": {
+        "**": {
+          "anonymousPolicy": ["read"],
+          "policies": [
+            {
+              "users": ["uploader"],
+              "actions": ["read", "create", "update", "delete"]
+            }
+          ]
+        }
+      }
+    }
+  },
+  "log": {
+    "level": "info"
+  }
+}

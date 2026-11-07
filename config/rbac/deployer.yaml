@@ -1,0 +1,47 @@
+# Identitaet fuer Deployment und Angriffsszenarien.
+# Darf nur im Namespace der Anwendung arbeiten und hat keine Rechte auf
+# Kyverno-Richtlinien, PolicyExceptions oder Webhook-Konfigurationen. Sonst
+# koennte ein Deployment die Pruefung an der Admission einfach abschalten.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-app
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+  namespace: example-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer
+  namespace: example-app
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods/log", "events"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer
+  namespace: example-app
+subjects:
+  - kind: ServiceAccount
+    name: deployer
+    namespace: example-app
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deployer
