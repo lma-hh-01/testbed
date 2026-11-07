@@ -23,3 +23,11 @@ make cluster VARIANT=v0   # lokale Umgebung aufbauen
 make deploy               # Anwendung deployen, danach http://localhost:8080 öffnen
 make down                 # alles wieder abbauen
 ```
+
+## Auf dem eigenen GitHub-Account ausprobieren (Forks)
+
+> Die ausführliche Anleitung folgt. Schon jetzt fest steht, was nach dem Forken der drei Repositories nötig ist:
+
+- In jedem Fork unter „Actions“ die Workflows aktivieren (in Forks sind sie zunächst ausgeschaltet).
+- Die [Renovate-App](https://github.com/apps/renovate) für die Forks von `example-app` und `secure-workflows` installieren („Only select repositories“). Renovate hält die gepinnten Abhängigkeiten von Variante V3 aktuell.
+- Account-Namen und E-Mail-Adresse in den Forks anpassen (dafür wird es einen eigenen Befehl geben).
