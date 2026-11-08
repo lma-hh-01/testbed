@@ -72,6 +72,26 @@ local_build() {
   tar -xf "$layout.tar" -C "$layout"
 }
 
+# --- Legitimes Pipeline-Image --------------------------------------------------
+
+# Holt das von der Pipeline gebaute (und ab V1 signierte) Image der aktuellen
+# Variante nach zot, wie es deploy.sh tut, und gibt die Referenz im Cluster aus.
+# Nutzen Szenarien, bei denen ein Angriff an einem legitimen Image ansetzt, damit
+# eine Ablehnung nur am untersuchten Merkmal liegt und nicht an der Signatur.
+pipeline_image_in_zot() {
+  local image="ghcr.io/$GITHUB_OWNER/example-app-$VARIANT"
+  local url="https://api.github.com/repos/$GITHUB_OWNER/example-app/actions/workflows/$VARIANT.yml/runs?branch=main&status=success&per_page=1"
+  local commit tag digest
+  commit="$(curl -fsSL "$url" | jq -r '.workflow_runs[0].head_sha // empty')"
+  [ -n "$commit" ] || fail "Kein erfolgreicher Lauf von $VARIANT.yml auf main gefunden."
+  tag="$commit"
+  [ "$VARIANT" = v0 ] && tag=latest
+  digest="$(oras resolve --registry-config "$ORAS_AUTH_FILE" "$image:$tag")"
+  oras cp --recursive --from-registry-config "$ORAS_AUTH_FILE" --to-registry-config "$ORAS_AUTH_FILE" \
+    "$image@$digest" "$ZOT_HOST_ADDRESS/example-app-$VARIANT:$tag" >/dev/null
+  echo "$ZOT_CLUSTER_ADDRESS/example-app-$VARIANT@$digest"
+}
+
 # --- Angriff ausfuehren und einordnen -----------------------------------------
 
 # Wendet ein Manifest mit den Rechten des Deployers an und ordnet das Ergebnis ein.
