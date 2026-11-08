@@ -42,6 +42,7 @@ check_present docker
 check_present git
 check_present curl
 check_present openssl
+check_present gh
 check_version kind "$KIND_VERSION" kind version
 check_version kubectl "$KUBECTL_VERSION" kubectl version --client
 check_version helm "$HELM_VERSION" helm version --short

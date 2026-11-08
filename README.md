@@ -31,6 +31,31 @@ make down                 # alles wieder abbauen
 - In jedem Fork unter „Actions“ die Workflows aktivieren (in Forks sind sie zunächst ausgeschaltet).
 - Eine eigene GitHub-App für Renovate anlegen und installieren, siehe [Eigene Renovate-App einrichten](#eigene-renovate-app-einrichten). Renovate hält die gepinnten Abhängigkeiten von Variante V3 aktuell.
 - Account-Namen und E-Mail-Adresse in den Forks anpassen (dafür wird es einen eigenen Befehl geben).
+- Den Branch `main` in den Forks von `example-app` und `secure-workflows` schützen, siehe [main schützen](#main-schützen).
+
+### main schützen
+
+**Worum es geht:** Die Prüfungen der Pipeline verlassen sich darauf, dass Änderungen nur über Pull Requests auf `main` kommen und die Historie nicht umgeschrieben wird. Das stellt GitHub mit einem Ruleset sicher. Es gilt für den Branch `main` von `example-app` und `secure-workflows`:
+
+| Regel | Warum |
+|---|---|
+| Änderungen nur über Pull Requests, 0 Freigaben nötig | Kein direkter Push auf `main`. Freigaben durch eine zweite Person sind mit nur einem Account nicht möglich. |
+| Zusammenführen nur als Merge-Commit | Squash und Rebase würden die Commits ersetzen und deren Signaturen verlieren. |
+| Kein Force-Push, kein Löschen von `main` | Die Historie bleibt unverändert, die Commit-Prüfung bleibt gültig. |
+| Keine Ausnahmen, auch nicht für Admins | Sonst wäre der Schutz mit einem übernommenen Admin-Account wirkungslos. |
+
+Die Regeln stehen in `config/github/ruleset-main.json`. Anwenden mit:
+
+```sh
+make protect-repos
+```
+
+Der Befehl braucht die [GitHub CLI](https://cli.github.com/) (`gh`), angemeldet mit deinem Account. Er kann beliebig oft ausgeführt werden und aktualisiert dann die vorhandenen Regeln. Prüfen lässt sich das Ergebnis mit:
+
+```sh
+gh api repos/<dein-account>/example-app/rules/branches/main --jq '.[].type'
+# deletion, non_fast_forward, pull_request
+```
 
 ### Eigene Renovate-App einrichten
 

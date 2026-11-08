@@ -2,7 +2,7 @@
 
 VARIANT ?= v0
 
-.PHONY: help check-tools cluster deploy down
+.PHONY: help check-tools cluster deploy down protect-repos
 
 help:
 	@echo "Testbed fuer die Absicherung der Software Supply Chain"
@@ -11,6 +11,7 @@ help:
 	@echo "  make cluster VARIANT=v0     Lokale Umgebung fuer eine Variante aufbauen (v0, v1, v2, v3)"
 	@echo "  make deploy                 Letzten erfolgreichen Build in den Cluster bringen"
 	@echo "  make down                   Lokale Umgebung vollstaendig abbauen"
+	@echo "  make protect-repos          main in example-app und secure-workflows auf GitHub schuetzen"
 	@echo ""
 	@echo "Die Anwendung ist nach 'make deploy' unter http://localhost:8080 erreichbar."
 
@@ -25,3 +26,6 @@ deploy:
 
 down:
 	@./scripts/cluster-down.sh
+
+protect-repos:
+	@./scripts/protect-repos.sh
