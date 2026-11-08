@@ -1,6 +1,6 @@
 # testbed
 
-Lokales Testbed zur Masterarbeit *Sicherheit in Software Supply Chains*.
+Lokales Testbed.
 
 > Diese README ist noch ein Gerüst. Die vollständige Schritt-für-Schritt-Anleitung folgt, sobald alle Varianten und Szenarien umgesetzt sind.
 
