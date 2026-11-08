@@ -1,8 +1,10 @@
 # Einstiegspunkt fuer das Testbed. "make help" zeigt alle Befehle.
 
 VARIANT ?= v0
+AK ?=
+RESULTS ?=
 
-.PHONY: help check-tools cluster deploy down protect-repos
+.PHONY: help check-tools cluster deploy down protect-repos scenario
 
 help:
 	@echo "Testbed fuer die Absicherung der Software Supply Chain"
@@ -12,6 +14,8 @@ help:
 	@echo "  make deploy                 Letzten erfolgreichen Build in den Cluster bringen"
 	@echo "  make down                   Lokale Umgebung vollstaendig abbauen"
 	@echo "  make protect-repos          main in example-app und secure-workflows auf GitHub schuetzen"
+	@echo "  make scenario AK=13         Angriffsszenario gegen die laufende Variante ausfuehren"
+	@echo "                              (Ergebnisse in .work/szenarien.csv, anderer Ort mit RESULTS=...)"
 	@echo ""
 	@echo "Die Anwendung ist nach 'make deploy' unter http://localhost:8080 erreichbar."
 
@@ -29,3 +33,7 @@ down:
 
 protect-repos:
 	@./scripts/protect-repos.sh
+
+scenario:
+	@test -n "$(AK)" || { echo "Aufruf: make scenario AK=13"; exit 1; }
+	@RESULTS_FILE="$(RESULTS)" ./scenarios/ak$(AK)-*.sh

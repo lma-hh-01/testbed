@@ -73,6 +73,11 @@ EOF
 create_deployer() {
   step "Namespace '$APP_NAMESPACE' und eingeschraenkte Identitaet 'deployer' anlegen"
   admin_kubectl apply -f "$TESTBED_DIR/config/rbac/deployer.yaml" >/dev/null
+  # Pods ohne eigenes ServiceAccount brauchen "default", das Kubernetes erst kurz
+  # nach dem Namespace anlegt. Sonst schlagen fruehe Deployments fehl.
+  until admin_kubectl get serviceaccount default --namespace "$APP_NAMESPACE" >/dev/null 2>&1; do
+    sleep 1
+  done
 
   local server
   server="$(admin_kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
