@@ -25,6 +25,14 @@
       }
     }
   },
+  "extensions": {
+    "ui": {
+      "enable": true
+    },
+    "search": {
+      "enable": true
+    }
+  },
   "log": {
     "level": "info"
   }
