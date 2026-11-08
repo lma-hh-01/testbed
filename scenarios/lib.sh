@@ -118,6 +118,26 @@ remove_manifest() {
   deployer_kubectl delete -f "$1" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }
 
+# Prueft als Deployer, ob eine Aktion erlaubt ist (kubectl auth can-i). Fuer
+# Angriffe, die an der Rechtevergabe scheitern sollen, unabhaengig davon, ob das
+# Zielobjekt in der Variante existiert. Ein leerer Namespace prueft clusterweit
+# bzw. im Namespace des Deployers. Setzt RESULT und DETAIL.
+# shellcheck disable=SC2034 # beide lesen die Szenario-Skripte
+try_permission() {
+  local verb="$1"
+  local resource="$2"
+  local namespace="$3"
+  local args=(auth can-i "$verb" "$resource")
+  [ -n "$namespace" ] && args+=(--namespace "$namespace")
+  if deployer_kubectl "${args[@]}" >/dev/null 2>&1; then
+    RESULT=durchgelassen
+    DETAIL="Deployer darf $verb $resource"
+  else
+    RESULT=rbac-verweigert
+    DETAIL="Deployer darf $verb $resource nicht"
+  fi
+}
+
 # --- Ergebnisse ---------------------------------------------------------------
 
 # Die Hypothese aus Kap. 5 nennt die Variante, ab der ein Angriff abgewehrt wird
