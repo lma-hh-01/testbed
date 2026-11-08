@@ -7,6 +7,8 @@ kind delete cluster --name "$CLUSTER_NAME"
 
 step "Registry zot entfernen"
 docker rm -f "$ZOT_CONTAINER" >/dev/null 2>&1 || true
+# Builder, den Szenarien mit lokalem Build anlegen.
+docker buildx rm testbed >/dev/null 2>&1 || true
 
 step "Laufzeitdaten loeschen ($WORK_DIR)"
 rm -rf "$WORK_DIR"

@@ -50,6 +50,28 @@ workload_manifest() {
     }'
 }
 
+# --- Lokaler Build -------------------------------------------------------------
+
+# Szenarien, die ein Image ausserhalb der Pipeline bauen, nutzen einen eigenen
+# BuildKit-Builder. Der Standard-Treiber von Docker kann kein OCI-Layout ausgeben.
+LOCAL_BUILDER="testbed"
+
+# Baut example-app fuer linux/amd64 als OCI-Layout in das angegebene Verzeichnis.
+# Weitere Argumente gehen an "docker buildx build", z. B. --build-arg.
+local_build() {
+  local layout="$1"
+  shift
+  docker buildx inspect "$LOCAL_BUILDER" >/dev/null 2>&1 ||
+    docker buildx create --name "$LOCAL_BUILDER" --driver docker-container \
+      --driver-opt "image=$BUILDKIT_IMAGE" >/dev/null
+  rm -rf "$layout" "$layout.tar"
+  docker buildx build --builder "$LOCAL_BUILDER" --quiet --platform linux/amd64 \
+    --provenance=false --sbom=false "$@" \
+    --output "type=oci,dest=$layout.tar" "$EXAMPLE_APP_DIR" >/dev/null
+  mkdir -p "$layout"
+  tar -xf "$layout.tar" -C "$layout"
+}
+
 # --- Angriff ausfuehren und einordnen -----------------------------------------
 
 # Wendet ein Manifest mit den Rechten des Deployers an und ordnet das Ergebnis ein.
