@@ -1,4 +1,4 @@
-# Einstiegspunkt fuer das Testbed. "make help" zeigt alle Befehle.
+# Entry point for the testbed. "make help" lists all commands.
 
 VARIANT ?= v0
 AK ?=
@@ -9,18 +9,18 @@ EMAIL ?=
 .PHONY: help check-tools cluster deploy down protect-repos scenario fork-setup
 
 help:
-	@echo "Testbed fuer die Absicherung der Software Supply Chain"
+	@echo "Testbed for securing the software supply chain"
 	@echo ""
-	@echo "  make check-tools            Pruefen, ob alle Werkzeuge installiert sind"
-	@echo "  make cluster VARIANT=v0     Lokale Umgebung fuer eine Variante aufbauen (v0, v1, v2, v3)"
-	@echo "  make deploy                 Letzten erfolgreichen Build in den Cluster bringen"
-	@echo "  make down                   Lokale Umgebung vollstaendig abbauen"
-	@echo "  make protect-repos          main in example-app und secure-workflows auf GitHub schuetzen"
-	@echo "  make scenario AK=13         Angriffsszenario gegen die laufende Variante ausfuehren"
-	@echo "                              (Ergebnisse in .work/szenarien.csv, anderer Ort mit RESULTS=...)"
-	@echo "  make fork-setup OWNER=.. EMAIL=..  Klone auf den eigenen GitHub-Account anpassen"
+	@echo "  make check-tools            Check that all tools are installed"
+	@echo "  make cluster VARIANT=v0     Set up the local environment for a variant (v0, v1, v2, v3)"
+	@echo "  make deploy                 Deploy the last successful build to the cluster"
+	@echo "  make down                   Tear down the local environment completely"
+	@echo "  make protect-repos          Protect main of example-app and secure-workflows on GitHub"
+	@echo "  make scenario AK=13         Run an attack scenario against the running variant"
+	@echo "                              (results in .work/scenario-results.csv, other location with RESULTS=...)"
+	@echo "  make fork-setup OWNER=.. EMAIL=..  Adapt the clones to your own GitHub account"
 	@echo ""
-	@echo "Die Anwendung ist nach 'make deploy' unter http://localhost:8080 erreichbar."
+	@echo "After 'make deploy' the application is available at http://localhost:8080."
 
 check-tools:
 	@./scripts/check-tools.sh
@@ -38,7 +38,7 @@ protect-repos:
 	@./scripts/protect-repos.sh
 
 scenario:
-	@test -n "$(AK)" || { echo "Aufruf: make scenario AK=13"; exit 1; }
+	@test -n "$(AK)" || { echo "Usage: make scenario AK=13"; exit 1; }
 	@RESULTS_FILE="$(RESULTS)" ./scenarios/ak$(AK)-*.sh
 
 fork-setup:

@@ -1,33 +1,33 @@
 #!/usr/bin/env bash
-# AK-08: Artefakt-Manipulation nach dem Build.
-# Ein Angreifer nimmt das von der Pipeline signierte Image, veraendert seinen
-# Inhalt und kopiert die gueltige Original-Signatur auf das veraenderte Image.
-# Weil Signatur und Digest aneinander gebunden sind (AF-09), deckt die Signatur
-# den neuen Inhalt nicht ab: Die Pruefung an der Admission schlaegt fehl.
+# AK-08: Artifact manipulation after the build.
+# An attacker takes the image signed by the pipeline, changes its content and
+# copies the valid original signature onto the changed image. Because signature
+# and digest are bound to each other (AF-09), the signature does not cover the
+# new content: the verification at admission fails.
 source "$(dirname "$0")/lib.sh"
 
 AK="AK-08"
-CASE="signatur-transplantiert"
+CASE="signature-transplanted"
 HYPOTHESIS=V1
 AUTH="$ORAS_AUTH_FILE"
 HOST_REPO="$ZOT_HOST_ADDRESS/example-app-$VARIANT"
 
-describe "$AK" "Signatur auf manipuliertes Image kopiert" \
-  "Das signierte Image wird veraendert und bekommt die Original-Signatur angehaengt. Erwartet: In V0 laeuft es (keine Pruefung), ab V1 lehnt die Admission ab, weil die Signatur den veraenderten Digest nicht abdeckt."
+describe "$AK" "Signature copied onto a tampered image" \
+  "The signed image is changed and gets the original signature attached. Expected: in V0 it runs (no verification), from V1 on the admission denies it, because the signature does not cover the changed digest."
 
-step "Legitimes, signiertes Image der Variante bereitstellen"
+step "Provide the legitimate, signed image of the variant"
 orig_ref="$(pipeline_image_in_zot)"
 orig="${orig_ref##*@}"
 info "Original: $orig"
 
-step "Inhalt des Images veraendern (manipulierter Build)"
+step "Change the content of the image (manipulated build)"
 layout="$SCENARIO_DIR/ak08-image"
-local_build "$layout" --build-arg APP_VARIANT=manipuliert
+local_build "$layout" --build-arg APP_VARIANT=manipulated
 mod="$(jq -r '.manifests[0].digest' "$layout/index.json")"
 oras cp --from-oci-layout --to-registry-config "$AUTH" "$layout@$mod" "$HOST_REPO:ak08" >/dev/null
-info "Manipuliert: $mod"
+info "Manipulated: $mod"
 
-step "Original-Signatur auf das manipulierte Image umhaengen"
+step "Move the original signature onto the manipulated image"
 sig="$(oras discover --registry-config "$AUTH" --format json "$HOST_REPO@$orig" |
   jq -r '[.referrers[] | select(.artifactType | startswith("application/vnd.dev.sigstore.bundle"))][0].digest // empty')"
 if [ -n "$sig" ]; then
@@ -38,15 +38,15 @@ if [ -n "$sig" ]; then
       > "$SCENARIO_DIR/ak08-sig.json"
   oras manifest push --registry-config "$AUTH" "$HOST_REPO:ak08-sig" \
     --media-type application/vnd.oci.image.manifest.v1+json "$SCENARIO_DIR/ak08-sig.json" >/dev/null
-  info "Signatur angehaengt. Sie deckt weiterhin nur das Original ab."
+  info "Signature attached. It still only covers the original."
 else
-  info "Das Original traegt keine Signatur (Variante ohne Signaturpflicht), nichts umzuhaengen."
+  info "The original carries no signature (variant without mandatory signatures), nothing to move."
 fi
 
-step "Manipuliertes Image mit angehaengter Signatur deployen"
+step "Deploy the manipulated image with the attached signature"
 image="$ZOT_CLUSTER_ADDRESS/example-app-$VARIANT@$mod"
 manifest="$SCENARIO_DIR/ak08.yaml"
-workload_manifest deployment ak08-manipuliert "$image" > "$manifest"
+workload_manifest deployment ak08-manipulated "$image" > "$manifest"
 try_apply "$manifest"
 record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$image"
 remove_manifest "$manifest"

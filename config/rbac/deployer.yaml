@@ -1,7 +1,7 @@
-# Identitaet fuer Deployment und Angriffsszenarien.
-# Darf nur im Namespace der Anwendung arbeiten und hat keine Rechte auf
-# Kyverno-Richtlinien, PolicyExceptions oder Webhook-Konfigurationen. Sonst
-# koennte ein Deployment die Pruefung an der Admission einfach abschalten.
+# Identity for deployments and attack scenarios.
+# May only work in the namespace of the application and has no permissions on
+# Kyverno policies, PolicyExceptions or webhook configurations. Otherwise a
+# deployment could simply switch off the verification at admission.
 apiVersion: v1
 kind: Namespace
 metadata:

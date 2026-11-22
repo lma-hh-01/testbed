@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Gemeinsame Einstellungen und Hilfsfunktionen fuer alle Skripte des Testbeds.
-# Wird von den anderen Skripten mit "source" eingebunden.
+# Shared settings and helper functions for all scripts of the testbed.
+# The other scripts include this file with "source".
 set -euo pipefail
 
 TESTBED_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$TESTBED_DIR/versions.env"
 
-# Die drei Repositories liegen nebeneinander im selben Ordner.
+# The three repositories sit next to each other in the same folder.
 EXAMPLE_APP_DIR="$TESTBED_DIR/../example-app"
 SECURE_WORKFLOWS_DIR="$TESTBED_DIR/../secure-workflows"
-# Pfade normalisieren (ohne /../), damit ausgegebene Befehle lesbar sind.
+# Normalize the paths (without /../) so that printed commands stay readable.
 [ -d "$EXAMPLE_APP_DIR" ] && EXAMPLE_APP_DIR="$(cd "$EXAMPLE_APP_DIR" && pwd)"
 [ -d "$SECURE_WORKFLOWS_DIR" ] && SECURE_WORKFLOWS_DIR="$(cd "$SECURE_WORKFLOWS_DIR" && pwd)"
 GITHUB_OWNER="lma-hh-01"
@@ -17,15 +17,15 @@ GITHUB_OWNER="lma-hh-01"
 CLUSTER_NAME="testbed"
 APP_NAMESPACE="example-app"
 
-# Laufzeitdaten (Passwoerter, kubeconfigs). Wird von "make down" geloescht.
+# Runtime data (passwords, kubeconfigs). Deleted by "make down".
 WORK_DIR="$TESTBED_DIR/.work"
 ADMIN_KUBECONFIG="$WORK_DIR/admin.kubeconfig"
 DEPLOYER_KUBECONFIG="$WORK_DIR/deployer.kubeconfig"
 
-# Die Registry zot ist vom Rechner aus unter localhost:5001 erreichbar,
-# aus dem Cluster heraus unter zot.localhost:5000 (Alias im Docker-Netz "kind").
-# Die Endung .localhost sorgt dafuer, dass Kyverno die Registry ohne TLS anspricht,
-# siehe start_zot in cluster-up.sh.
+# The registry zot is reachable from the host at localhost:5001 and from
+# inside the cluster at zot.localhost:5000 (alias in the Docker network "kind").
+# The .localhost suffix makes Kyverno talk to the registry without TLS,
+# see start_zot in cluster-up.sh.
 ZOT_CONTAINER="zot"
 ZOT_HOST_ADDRESS="localhost:5001"
 ZOT_CLUSTER_HOST="zot.localhost"
@@ -45,7 +45,7 @@ info() {
 }
 
 fail() {
-  printf '\nFEHLER: %s\n' "$*" >&2
+  printf '\nERROR: %s\n' "$*" >&2
   exit 1
 }
 
@@ -53,7 +53,7 @@ require_variant() {
   local variant="$1"
   case " $VARIANTS " in
     *" $variant "*) ;;
-    *) fail "Unbekannte Variante '$variant'. Erlaubt sind: $VARIANTS" ;;
+    *) fail "Unknown variant '$variant'. Allowed are: $VARIANTS" ;;
   esac
 }
 

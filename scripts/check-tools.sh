@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Prueft, ob alle benoetigten Werkzeuge installiert sind und ob ihre Versionen
-# mit versions.env uebereinstimmen. Abweichende Versionen sind nur eine Warnung.
+# Checks whether all required tools are installed and whether their versions
+# match versions.env. Different versions are only a warning.
 source "$(dirname "$0")/lib.sh"
 
 missing=0
@@ -12,7 +12,7 @@ check_version() {
   shift 2
 
   if ! command -v "$tool" >/dev/null 2>&1; then
-    printf '  FEHLT    %-10s (benoetigt Version %s)\n' "$tool" "$expected"
+    printf '  MISSING  %-10s (version %s required)\n' "$tool" "$expected"
     missing=$((missing + 1))
     return
   fi
@@ -22,7 +22,7 @@ check_version() {
   if grep -qF "$expected" <<<"$output"; then
     printf '  OK       %-10s %s\n' "$tool" "$expected"
   else
-    printf '  ANDERS   %-10s erwartet %s, gefunden: %s\n' "$tool" "$expected" "$(head -n 1 <<<"$output")"
+    printf '  OTHER    %-10s expected %s, found: %s\n' "$tool" "$expected" "$(head -n 1 <<<"$output")"
     different=$((different + 1))
   fi
 }
@@ -30,14 +30,14 @@ check_version() {
 check_present() {
   local tool="$1"
   if command -v "$tool" >/dev/null 2>&1; then
-    printf '  OK       %-10s vorhanden\n' "$tool"
+    printf '  OK       %-10s present\n' "$tool"
   else
-    printf '  FEHLT    %-10s\n' "$tool"
+    printf '  MISSING  %-10s\n' "$tool"
     missing=$((missing + 1))
   fi
 }
 
-step "Werkzeuge"
+step "Tools"
 check_present docker
 check_present git
 check_present curl
@@ -53,38 +53,38 @@ check_version jq "$JQ_VERSION" jq --version
 check_version yq "$YQ_VERSION" yq --version
 
 if [ "$missing" -gt 0 ]; then
-  fail "$missing Werkzeug(e) fehlen. Installationshinweise stehen in der README."
+  fail "$missing tool(s) missing. Installation hints are in the README."
 fi
 
 step "Docker"
 if ! docker info >/dev/null 2>&1; then
-  fail "Docker laeuft nicht. Bitte Docker starten und erneut versuchen."
+  fail "Docker is not running. Please start Docker and try again."
 fi
-info "Docker laeuft."
+info "Docker is running."
 
-# Die Images der Beispielanwendung gibt es nur fuer amd64. Auf Rechnern mit
-# ARM-Prozessor (z. B. Apple Silicon) muessen sie emuliert werden.
+# The images of the example application only exist for amd64. On machines with
+# an ARM processor (e.g. Apple Silicon) they have to be emulated.
 architecture="$(docker run --rm --platform linux/amd64 "$ALPINE_IMAGE" uname -m 2>/dev/null || true)"
 if [ "$architecture" = "x86_64" ]; then
-  info "amd64-Images laufen (gegebenenfalls emuliert)."
+  info "amd64 images run (emulated if necessary)."
 else
-  fail "amd64-Images lassen sich nicht starten. Unter macOS in Docker Desktop die Option 'Use Rosetta for x86_64/amd64 emulation' aktivieren."
+  fail "amd64 images cannot be started. On macOS enable the option 'Use Rosetta for x86_64/amd64 emulation' in Docker Desktop."
 fi
 
-# kind empfiehlt unter Linux hoehere inotify-Grenzen, sonst starten Pods teils nicht.
+# On Linux kind recommends higher inotify limits, otherwise some pods do not start.
 if [ "$(uname -s)" = "Linux" ]; then
   watches="$(sysctl -n fs.inotify.max_user_watches)"
   instances="$(sysctl -n fs.inotify.max_user_instances)"
   if [ "$watches" -lt 524288 ] || [ "$instances" -lt 512 ]; then
-    info "WARNUNG: inotify-Grenzen sind niedrig. Empfohlen (siehe README):"
+    info "WARNING: inotify limits are low. Recommended (see README):"
     info "  sudo sysctl fs.inotify.max_user_watches=524288 fs.inotify.max_user_instances=512"
   fi
 fi
 
-step "Ergebnis"
+step "Result"
 if [ "$different" -gt 0 ]; then
-  info "$different Werkzeug(e) in anderer Version. Das Testbed laeuft in der Regel trotzdem;"
-  info "fuer vergleichbare Messungen bitte die Versionen aus versions.env verwenden."
+  info "$different tool(s) in a different version. The testbed usually still works;"
+  info "for comparable measurements please use the versions from versions.env."
 else
-  info "Alles bereit."
+  info "Everything ready."
 fi

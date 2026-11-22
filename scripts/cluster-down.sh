@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Baut das Testbed vollstaendig ab: Cluster, Registry und Laufzeitdaten.
+# Tears down the testbed completely: cluster, registry and runtime data.
 source "$(dirname "$0")/lib.sh"
 
-step "kind-Cluster '$CLUSTER_NAME' loeschen"
+step "Delete kind cluster '$CLUSTER_NAME'"
 kind delete cluster --name "$CLUSTER_NAME"
 
-step "Registry zot entfernen"
+step "Remove registry zot"
 docker rm -f "$ZOT_CONTAINER" >/dev/null 2>&1 || true
-# Builder, den Szenarien mit lokalem Build anlegen.
+# Builder that scenarios with a local build create.
 docker buildx rm testbed >/dev/null 2>&1 || true
 
-step "Laufzeitdaten loeschen ($WORK_DIR)"
+step "Delete runtime data ($WORK_DIR)"
 rm -rf "$WORK_DIR"
 
-step "Fertig"
+step "Done"

@@ -45,10 +45,10 @@ cd testbed
 Dann:
 
 ```sh
-make check-tools          # Werkzeuge prüfen
-make cluster VARIANT=v0   # lokale Umgebung aufbauen
-make deploy               # Anwendung deployen, danach http://localhost:8080 öffnen
-make down                 # alles wieder abbauen
+make check-tools          # check the tools
+make cluster VARIANT=v0   # set up the local environment
+make deploy               # deploy the application, then open http://localhost:8080
+make down                 # tear everything down again
 ```
 
 ## Angriffsszenarien
@@ -56,18 +56,19 @@ make down                 # alles wieder abbauen
 Jedes Szenario spielt einen Angriff aus dem Bedrohungsmodell gegen die gerade laufende Variante durch und hält das Ergebnis fest. So wird sichtbar, ab welcher Variante ein Angriff abgewehrt wird.
 
 ```sh
-make cluster VARIANT=v1     # Variante aufbauen, gegen die geprüft wird
-make scenario AK=13         # Szenario ausführen
+make cluster VARIANT=v1     # set up the variant to test against
+make scenario AK=13         # run the scenario
 ```
 
 Das Ergebnis jedes Szenarios ist eines von:
 
-- **durchgelassen** – der Angriff war erfolgreich, das Image läuft im Cluster,
-- **admission-abgelehnt** – die Prüfung an der Admission hat das Deployment abgelehnt,
-- **build-abgebrochen** – schon die Pipeline hat den Angriff gestoppt, es entstand kein Image,
-- **rbac-verweigert** – die Rechtevergabe im Cluster hat die Aktion verhindert.
+- **allowed** – der Angriff war erfolgreich, das Image läuft im Cluster,
+- **admission-denied** – die Prüfung an der Admission hat das Deployment abgelehnt,
+- **build-aborted** – schon die Pipeline hat den Angriff gestoppt, es entstand kein Image,
+- **rbac-denied** – die Rechtevergabe im Cluster hat die Aktion verhindert,
+- **correct-version** – nur bei AK-10a: trotz Angriff wurde die richtige Paketversion eingebaut.
 
-Die Ergebnisse werden als Tabelle angezeigt und in `.work/szenarien.csv` geschrieben (anderer Ort mit `make scenario AK=.. RESULTS=results/szenarien.csv`). Jede Zeile nennt Variante, Szenario, erwartetes und tatsächliches Ergebnis.
+Die Ergebnisse werden als Tabelle angezeigt und in `.work/scenario-results.csv` geschrieben (anderer Ort mit `make scenario AK=.. RESULTS=results/scenario-results.csv`). Jede Zeile nennt Variante, Szenario, erwartetes und tatsächliches Ergebnis.
 
 ### Lokale Szenarien
 
@@ -75,17 +76,17 @@ Diese laufen vollständig auf dem Rechner, ohne GitHub. Ein frisch gebautes oder
 
 | Befehl | Angriff | Erwartet | Woran erkennbar |
 |---|---|---|---|
-| `make scenario AK=07` | Image außerhalb der Pipeline gebaut und direkt in die Registry gelegt | ab V1 abgelehnt (Signatur der Pipeline fehlt) | Ergebnis `admission-abgelehnt`, Meldung „nicht signiert“ |
-| `make scenario AK=08` | signiertes Image verändert, Original-Signatur umgehängt | ab V1 abgelehnt (Signatur deckt den neuen Digest nicht) | `admission-abgelehnt`, Digest-Bindung |
-| `make scenario AK=09` | Tag in der Registry auf ein untergeschobenes Image umgehängt | ab V1 abgelehnt (Digest-Pflicht) | `admission-abgelehnt`, „does not have a digest“ |
-| `make scenario AK=10b` | fremdes Image unter vertipptem Namen (`ngnix`) | ab V1 abgelehnt (Signatur fehlt) | `admission-abgelehnt` |
-| `make scenario AK=12` | Deployer versucht, die Verifikation zu ändern (Richtlinie, Webhook, Rechte) | in allen Varianten verweigert (RBAC) | `rbac-verweigert` je Teil-Angriff |
-| `make scenario AK=13` | unsigniertes Image per Pod/Deployment/Job/CronJob und in fremdem Namespace | ab V1 abgelehnt; fremder Namespace immer RBAC | `admission-abgelehnt` bzw. `rbac-verweigert` |
-| `make scenario AK=14` | signiertes Image, aber unsichere Pod-Konfiguration (privilegiert, root, Host-Netz) | ab V3 abgelehnt (Pod-Sicherheitsrichtlinie) | `admission-abgelehnt` mit eigener Meldung je Fall |
+| `make scenario AK=07` | Image außerhalb der Pipeline gebaut und direkt in die Registry gelegt | ab V1 abgelehnt (Signatur der Pipeline fehlt) | Ergebnis `admission-denied`, Meldung „is not signed“ |
+| `make scenario AK=08` | signiertes Image verändert, Original-Signatur umgehängt | ab V1 abgelehnt (Signatur deckt den neuen Digest nicht) | `admission-denied`, Digest-Bindung |
+| `make scenario AK=09` | Tag in der Registry auf ein untergeschobenes Image umgehängt | ab V1 abgelehnt (Digest-Pflicht) | `admission-denied`, „does not have a digest“ |
+| `make scenario AK=10b` | fremdes Image unter vertipptem Namen (`ngnix`) | ab V1 abgelehnt (Signatur fehlt) | `admission-denied` |
+| `make scenario AK=12` | Deployer versucht, die Verifikation zu ändern (Richtlinie, Webhook, Rechte) | in allen Varianten verweigert (RBAC) | `rbac-denied` je Teil-Angriff |
+| `make scenario AK=13` | unsigniertes Image per Pod/Deployment/Job/CronJob und in fremdem Namespace | ab V1 abgelehnt; fremder Namespace immer RBAC | `admission-denied` bzw. `rbac-denied` |
+| `make scenario AK=14` | signiertes Image, aber unsichere Pod-Konfiguration (privilegiert, root, Host-Netz) | ab V3 abgelehnt (Pod-Sicherheitsrichtlinie) | `admission-denied` mit eigener Meldung je Fall |
 
 ### GitHub-Szenarien
 
-Diese greifen echt über GitHub an (Branches, Pull Requests, Workflow-Starts) und brauchen daher einen eigenen Fork mit aktivierten Actions. Weil ein Push auf `main` alle vier Varianten gleichzeitig baut, der lokale Cluster aber nur eine Variante trägt, greift der **erste** Aufruf einmal echt an, hält das Ergebnis je Variante fest und stellt die Repositories sofort wieder her; jeder weitere Aufruf (andere Variante) wertet nur noch aus. Ein erneuter Angriff wird mit `ANGRIFF=neu` erzwungen.
+Diese greifen echt über GitHub an (Branches, Pull Requests, Workflow-Starts) und brauchen daher einen eigenen Fork mit aktivierten Actions. Weil ein Push auf `main` alle vier Varianten gleichzeitig baut, der lokale Cluster aber nur eine Variante trägt, greift der **erste** Aufruf einmal echt an, hält das Ergebnis je Variante fest und stellt die Repositories sofort wieder her; jeder weitere Aufruf (andere Variante) wertet nur noch aus. Ein erneuter Angriff wird mit `ATTACK=new` erzwungen.
 
 Einige dieser Szenarien bringen den Angriff über einen **signierten Commit** auf `main` ein. Das Skript bereitet die Änderung vor und nennt den genauen `git commit`-Befehl, den du ausführst (gitsign öffnet dazu einen Browser-Login); danach rufst du dasselbe `make scenario` erneut auf. Zum Schluss nimmt ein ebenfalls signierter Revert die Änderung wieder zurück.
 
@@ -93,7 +94,7 @@ Einige dieser Szenarien bringen den Angriff über einen **signierten Commit** au
 |---|---|---|
 | `make scenario AK=05` | Build von einem inoffiziellen Feature-Branch; eigene Build-Schritte auf `main` | Feature-Branch ab V1, eigene Build-Schritte ab V2 abgewehrt |
 | `make scenario AK=06` | zusätzlicher Job signiert ein manipuliertes Image | ab V2 abgewehrt (V3 schon in der Pipeline durch zizmor) |
-| `make scenario AK=10a` | Dependency Confusion: `firma-utils 99.0.0` in die öffentliche Paketquelle | bis V2 durchgelassen (Seite zeigt 99.0.0), ab V3 bleibt es bei 1.0.0 |
+| `make scenario AK=10a` | Dependency Confusion: `company-utils 99.0.0` in die öffentliche Paketquelle | bis V2 durchgelassen (Seite zeigt 99.0.0), ab V3 bleibt es bei 1.0.0 |
 | `make scenario AK=11` | verwundbare Abhängigkeit (Werkzeug 0.15.2) hinzugefügt | bis V2 durchgelassen, ab V3 am Schwachstellen-Gate abgelehnt |
 | `make scenario AK=02-03` | Commit mit gefälschtem Autor (und Variante: Prüfung im App-Workflow entfernt) | gefälschter Autor ab V1, mit entfernter Prüfung erst ab V2 abgewehrt |
 
@@ -115,7 +116,7 @@ Die lokalen Szenarien laufen mit den veröffentlichten Images von `lma-hh-01`. F
 Der Account-Name `lma-hh-01` und die gitsign-E-Mail stehen an wenigen festen Stellen in den Workflows, Kyverno-Richtlinien und Skripten (alle übrigen Stellen passen sich über `${{ github.repository_owner }}` von selbst an). Ein Befehl ersetzt sie in den drei Klonen:
 
 ```sh
-make fork-setup OWNER=dein-account EMAIL=deine-gitsign-mail@example.org
+make fork-setup OWNER=your-account EMAIL=your-gitsign-mail@example.org
 ```
 
 `OWNER` ist dein GitHub-Account, `EMAIL` die Adresse, mit der du Commits per gitsign signierst (deine bei GitHub hinterlegte Adresse). Der Befehl ändert nur Dateien; committen, pushen und die Repo-Einstellungen bleiben bewusst manuell, weil ein Commit auf `example-app` signiert sein muss. Dieser erste signierte Commit trägt zugleich deine E-Mail in die Signierer-Liste (`ALLOWED_SIGNERS`) ein und besteht damit die eigene Commit-Prüfung.
@@ -123,7 +124,7 @@ make fork-setup OWNER=dein-account EMAIL=deine-gitsign-mail@example.org
 Wenn du Renovate nutzt: Die numerische Benutzer-ID deiner Renovate-App ist erst nach deren Anlage bekannt und muss danach in `ALLOWED_SIGNERS` (in `example-app/.github/workflows/v1.yml` sowie `secure-workflows/.github/workflows/v2.yml` und `v3.yml`) eingetragen werden:
 
 ```sh
-gh api "/users/dein-account-testbed-renovate[bot]" --jq .id
+gh api "/users/your-account-testbed-renovate[bot]" --jq .id
 ```
 
 ### main schützen
@@ -146,7 +147,7 @@ make protect-repos
 Der Befehl braucht die [GitHub CLI](https://cli.github.com/) (`gh`), angemeldet mit deinem Account. Er kann beliebig oft ausgeführt werden und aktualisiert dann die vorhandenen Regeln. Prüfen lässt sich das Ergebnis mit:
 
 ```sh
-gh api repos/<dein-account>/example-app/rules/branches/main --jq '.[].type'
+gh api repos/<your-account>/example-app/rules/branches/main --jq '.[].type'
 # deletion, non_fast_forward, pull_request
 ```
 
@@ -159,7 +160,7 @@ Du brauchst dafür die [GitHub CLI](https://cli.github.com/) (`gh`), angemeldet 
 **1. App anlegen.** Der Befehl öffnet GitHub mit einer vorausgefüllten App: Name, kein Webhook, nur die Rechte, die Renovate braucht. Klicke dort unten auf **Create GitHub App**.
 
 ```sh
-OWNER=dein-account   # dein GitHub-Account Name
+OWNER=your-account   # your GitHub account name
 APP=$OWNER-testbed-renovate
 
 open "https://github.com/settings/apps/new?name=$APP&url=https://github.com/$OWNER/secure-workflows&public=false&webhook_active=false&administration=read&checks=write&contents=write&issues=write&metadata=read&pull_requests=write&statuses=write&vulnerability_alerts=read&workflows=write"
@@ -183,7 +184,7 @@ APP_ID="ENTER_APP_ID_HERE"
 gh variable set RENOVATE_APP_ID --repo "$OWNER/secure-workflows" --body "$APP_ID"
 gh secret set RENOVATE_APP_PRIVATE_KEY --repo "$OWNER/secure-workflows" < ~/Downloads/$APP.*.private-key.pem
 
-# Der Schlüssel liegt jetzt als Secret bei GitHub, die Datei wird nicht mehr gebraucht.
+# The key is now stored as a secret on GitHub, the file is no longer needed.
 rm ~/Downloads/$APP.*.private-key.pem
 ```
 

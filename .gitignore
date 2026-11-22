@@ -1,5 +1,5 @@
-# Laufzeitdaten: Zertifikate, Passwoerter, kubeconfigs
+# Runtime data: certificates, passwords, kubeconfigs
 .work/
 
-# Zustand der GitHub-Szenarien (Run-IDs, Commits), reproduzierbar
+# State of the GitHub scenarios (run IDs, commits), reproducible
 results/state/
