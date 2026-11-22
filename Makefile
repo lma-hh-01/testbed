@@ -3,8 +3,10 @@
 VARIANT ?= v0
 AK ?=
 RESULTS ?=
+OWNER ?=
+EMAIL ?=
 
-.PHONY: help check-tools cluster deploy down protect-repos scenario
+.PHONY: help check-tools cluster deploy down protect-repos scenario fork-setup
 
 help:
 	@echo "Testbed fuer die Absicherung der Software Supply Chain"
@@ -16,6 +18,7 @@ help:
 	@echo "  make protect-repos          main in example-app und secure-workflows auf GitHub schuetzen"
 	@echo "  make scenario AK=13         Angriffsszenario gegen die laufende Variante ausfuehren"
 	@echo "                              (Ergebnisse in .work/szenarien.csv, anderer Ort mit RESULTS=...)"
+	@echo "  make fork-setup OWNER=.. EMAIL=..  Klone auf den eigenen GitHub-Account anpassen"
 	@echo ""
 	@echo "Die Anwendung ist nach 'make deploy' unter http://localhost:8080 erreichbar."
 
@@ -37,3 +40,6 @@ protect-repos:
 scenario:
 	@test -n "$(AK)" || { echo "Aufruf: make scenario AK=13"; exit 1; }
 	@RESULTS_FILE="$(RESULTS)" ./scenarios/ak$(AK)-*.sh
+
+fork-setup:
+	@OWNER="$(OWNER)" EMAIL="$(EMAIL)" ./scripts/fork-setup.sh

@@ -1,8 +1,35 @@
 # testbed
 
-Lokales Testbed.
+Testbed zur Absicherung der Software Supply Chain in Kubernetes. Es setzt die Toolchain in vier aufeinander aufbauenden Varianten um und prüft mit Angriffsszenarien, ab welcher Variante eine Angriffsklasse abgewehrt wird.
 
-> Diese README ist noch ein Gerüst. Die vollständige Schritt-für-Schritt-Anleitung folgt, sobald alle Varianten und Szenarien umgesetzt sind.
+## Überblick
+
+Drei Repositories arbeiten zusammen:
+
+| Repository | Inhalt |
+|---|---|
+| `testbed` (dieses) | kind-Cluster, lokale Registry (zot), Kyverno, Skripte, Szenarien, Makefile |
+| `example-app` | Beispielanwendung mit Dockerfile, Kubernetes-Manifesten und den Aufrufer-Workflows `v0`–`v3` |
+| `secure-workflows` | zentrale wiederverwendbare Workflows und die Kyverno-Richtlinien je Variante |
+
+Die vier Varianten:
+
+| Variante | Härtung |
+|---|---|
+| **V0** | Basislinie ohne Härtung (keine Signatur, keine Prüfung an der Admission) |
+| **V1** | Signatur (Cosign) + Digest-Pflicht + Commit-Signaturen (gitsign), Prüfung an der Admission |
+| **V2** | zusätzlich Provenance über einen zentralen Workflow, Prüfung von Builder-Identität und Quelle |
+| **V3** | zusätzlich SBOM, Schwachstellen-Gate, Pinning, Workflow- und Manifest-Prüfung, Pod-Sicherheit |
+
+## Voraussetzungen
+
+Benötigt werden Docker (laufend) sowie `kind`, `kubectl`, `helm`, `oras`, `cosign`, die Kyverno CLI, `jq`, `yq`, `git`, `curl` und die GitHub CLI `gh`. Die genauen Versionen stehen in `versions.env`. Ob alles vorhanden ist, prüft:
+
+```sh
+make check-tools
+```
+
+Auf Apple Silicon muss in Docker Desktop „Use Rosetta for x86_64/amd64 emulation“ aktiv sein (die Images sind amd64). `make check-tools` weist darauf sowie unter Linux auf die empfohlenen inotify-Grenzen hin.
 
 ## Kurzanleitung
 
@@ -74,12 +101,30 @@ Einige dieser Szenarien bringen den Angriff über einen **signierten Commit** au
 
 ## Auf dem eigenen GitHub-Account ausprobieren (Forks)
 
-> Die ausführliche Anleitung folgt. Schon jetzt fest steht, was nach dem Forken der drei Repositories nötig ist:
+Die lokalen Szenarien laufen mit den veröffentlichten Images von `lma-hh-01`. Für die GitHub-Szenarien (echte Angriffe über Pipeline-Läufe) brauchst du eigene Forks der drei Repositories. Der Ablauf einmalig:
 
-- In jedem Fork unter „Actions“ die Workflows aktivieren (in Forks sind sie zunächst ausgeschaltet).
-- Eine eigene GitHub-App für Renovate anlegen und installieren, siehe [Eigene Renovate-App einrichten](#eigene-renovate-app-einrichten). Renovate hält die gepinnten Abhängigkeiten von Variante V3 aktuell.
-- Account-Namen und E-Mail-Adresse in den Forks anpassen (dafür wird es einen eigenen Befehl geben).
-- Den Branch `main` in den Forks von `example-app` und `secure-workflows` schützen, siehe [main schützen](#main-schützen).
+1. Die drei Repositories auf den eigenen Account **forken** (`testbed`, `example-app`, `secure-workflows`) und nebeneinander klonen.
+2. In jedem Fork unter **Actions** die Workflows aktivieren (in Forks sind sie zunächst ausgeschaltet).
+3. Account-Namen und gitsign-E-Mail in den Klonen anpassen, siehe [Namen anpassen](#namen-anpassen).
+4. Die angepassten Dateien committen und als Pull Request nach `main` bringen: `example-app` **signiert** (gitsign), `secure-workflows` normal; in `testbed` reicht ein direkter Commit.
+5. Den Branch `main` in `example-app` und `secure-workflows` schützen, siehe [main schützen](#main-schützen).
+6. Optional: eine eigene Renovate-App einrichten, siehe [Eigene Renovate-App einrichten](#eigene-renovate-app-einrichten). Renovate hält die gepinnten Abhängigkeiten von Variante V3 aktuell.
+
+### Namen anpassen
+
+Der Account-Name `lma-hh-01` und die gitsign-E-Mail stehen an wenigen festen Stellen in den Workflows, Kyverno-Richtlinien und Skripten (alle übrigen Stellen passen sich über `${{ github.repository_owner }}` von selbst an). Ein Befehl ersetzt sie in den drei Klonen:
+
+```sh
+make fork-setup OWNER=dein-account EMAIL=deine-gitsign-mail@example.org
+```
+
+`OWNER` ist dein GitHub-Account, `EMAIL` die Adresse, mit der du Commits per gitsign signierst (deine bei GitHub hinterlegte Adresse). Der Befehl ändert nur Dateien; committen, pushen und die Repo-Einstellungen bleiben bewusst manuell, weil ein Commit auf `example-app` signiert sein muss. Dieser erste signierte Commit trägt zugleich deine E-Mail in die Signierer-Liste (`ALLOWED_SIGNERS`) ein und besteht damit die eigene Commit-Prüfung.
+
+Wenn du Renovate nutzt: Die numerische Benutzer-ID deiner Renovate-App ist erst nach deren Anlage bekannt und muss danach in `ALLOWED_SIGNERS` (in `example-app/.github/workflows/v1.yml` sowie `secure-workflows/.github/workflows/v2.yml` und `v3.yml`) eingetragen werden:
+
+```sh
+gh api "/users/dein-account-testbed-renovate[bot]" --jq .id
+```
 
 ### main schützen
 
