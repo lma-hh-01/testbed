@@ -110,7 +110,16 @@ install_kyverno() {
 apply_policies() {
   local policy_dir="$SECURE_WORKFLOWS_DIR/policies/$VARIANT"
   step "Kyverno-Richtlinien der Variante $VARIANT anwenden (aus secure-workflows)"
-  admin_kubectl apply -f "$policy_dir"
+  # Der Kyverno-Validierungs-Webhook ist direkt nach dem Start manchmal noch nicht
+  # erreichbar ("connection refused"), obwohl die Pods laufen. Deshalb den Apply
+  # wiederholen, bis er durchgeht.
+  local attempt
+  for attempt in $(seq 1 12); do
+    admin_kubectl apply -f "$policy_dir" && break
+    [ "$attempt" -lt 12 ] || fail "Kyverno-Webhook nach mehreren Versuchen nicht erreichbar."
+    info "Kyverno-Webhook noch nicht bereit, erneuter Versuch ($attempt)..."
+    sleep 5
+  done
   # Erst wenn Kyverno eine Richtlinie als bereit meldet, greift sie an der Admission.
   admin_kubectl wait -f "$policy_dir" \
     --for jsonpath='{.status.conditionStatus.ready}'=true --timeout 60s >/dev/null

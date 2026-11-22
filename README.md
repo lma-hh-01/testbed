@@ -24,6 +24,54 @@ make deploy               # Anwendung deployen, danach http://localhost:8080 öf
 make down                 # alles wieder abbauen
 ```
 
+## Angriffsszenarien
+
+Jedes Szenario spielt einen Angriff aus dem Bedrohungsmodell gegen die gerade laufende Variante durch und hält das Ergebnis fest. So wird sichtbar, ab welcher Variante ein Angriff abgewehrt wird.
+
+```sh
+make cluster VARIANT=v1     # Variante aufbauen, gegen die geprüft wird
+make scenario AK=13         # Szenario ausführen
+```
+
+Das Ergebnis jedes Szenarios ist eines von:
+
+- **durchgelassen** – der Angriff war erfolgreich, das Image läuft im Cluster,
+- **admission-abgelehnt** – die Prüfung an der Admission hat das Deployment abgelehnt,
+- **build-abgebrochen** – schon die Pipeline hat den Angriff gestoppt, es entstand kein Image,
+- **rbac-verweigert** – die Rechtevergabe im Cluster hat die Aktion verhindert.
+
+Die Ergebnisse werden als Tabelle angezeigt und in `.work/szenarien.csv` geschrieben (anderer Ort mit `make scenario AK=.. RESULTS=results/szenarien.csv`). Jede Zeile nennt Variante, Szenario, erwartetes und tatsächliches Ergebnis.
+
+### Lokale Szenarien
+
+Diese laufen vollständig auf dem Rechner, ohne GitHub. Ein frisch gebautes oder verändertes Image wird direkt in die lokale Registry gelegt und als eingeschränkter Deployer deployt.
+
+| Befehl | Angriff | Erwartet | Woran erkennbar |
+|---|---|---|---|
+| `make scenario AK=07` | Image außerhalb der Pipeline gebaut und direkt in die Registry gelegt | ab V1 abgelehnt (Signatur der Pipeline fehlt) | Ergebnis `admission-abgelehnt`, Meldung „nicht signiert“ |
+| `make scenario AK=08` | signiertes Image verändert, Original-Signatur umgehängt | ab V1 abgelehnt (Signatur deckt den neuen Digest nicht) | `admission-abgelehnt`, Digest-Bindung |
+| `make scenario AK=09` | Tag in der Registry auf ein untergeschobenes Image umgehängt | ab V1 abgelehnt (Digest-Pflicht) | `admission-abgelehnt`, „does not have a digest“ |
+| `make scenario AK=10b` | fremdes Image unter vertipptem Namen (`ngnix`) | ab V1 abgelehnt (Signatur fehlt) | `admission-abgelehnt` |
+| `make scenario AK=12` | Deployer versucht, die Verifikation zu ändern (Richtlinie, Webhook, Rechte) | in allen Varianten verweigert (RBAC) | `rbac-verweigert` je Teil-Angriff |
+| `make scenario AK=13` | unsigniertes Image per Pod/Deployment/Job/CronJob und in fremdem Namespace | ab V1 abgelehnt; fremder Namespace immer RBAC | `admission-abgelehnt` bzw. `rbac-verweigert` |
+| `make scenario AK=14` | signiertes Image, aber unsichere Pod-Konfiguration (privilegiert, root, Host-Netz) | ab V3 abgelehnt (Pod-Sicherheitsrichtlinie) | `admission-abgelehnt` mit eigener Meldung je Fall |
+
+### GitHub-Szenarien
+
+Diese greifen echt über GitHub an (Branches, Pull Requests, Workflow-Starts) und brauchen daher einen eigenen Fork mit aktivierten Actions. Weil ein Push auf `main` alle vier Varianten gleichzeitig baut, der lokale Cluster aber nur eine Variante trägt, greift der **erste** Aufruf einmal echt an, hält das Ergebnis je Variante fest und stellt die Repositories sofort wieder her; jeder weitere Aufruf (andere Variante) wertet nur noch aus. Ein erneuter Angriff wird mit `ANGRIFF=neu` erzwungen.
+
+Einige dieser Szenarien bringen den Angriff über einen **signierten Commit** auf `main` ein. Das Skript bereitet die Änderung vor und nennt den genauen `git commit`-Befehl, den du ausführst (gitsign öffnet dazu einen Browser-Login); danach rufst du dasselbe `make scenario` erneut auf. Zum Schluss nimmt ein ebenfalls signierter Revert die Änderung wieder zurück.
+
+| Befehl | Angriff | Erwartet |
+|---|---|---|
+| `make scenario AK=05` | Build von einem inoffiziellen Feature-Branch; eigene Build-Schritte auf `main` | Feature-Branch ab V1, eigene Build-Schritte ab V2 abgewehrt |
+| `make scenario AK=06` | zusätzlicher Job signiert ein manipuliertes Image | ab V2 abgewehrt (V3 schon in der Pipeline durch zizmor) |
+| `make scenario AK=10a` | Dependency Confusion: `firma-utils 99.0.0` in die öffentliche Paketquelle | bis V2 durchgelassen (Seite zeigt 99.0.0), ab V3 bleibt es bei 1.0.0 |
+| `make scenario AK=11` | verwundbare Abhängigkeit (Werkzeug 0.15.2) hinzugefügt | bis V2 durchgelassen, ab V3 am Schwachstellen-Gate abgelehnt |
+| `make scenario AK=02-03` | Commit mit gefälschtem Autor (und Variante: Prüfung im App-Workflow entfernt) | gefälschter Autor ab V1, mit entfernter Prüfung erst ab V2 abgewehrt |
+
+> **Achtung AK-02-03:** Dieses Szenario bringt gefälschte Commits dauerhaft in die Historie; danach bauen V1–V3 erst wieder, wenn der Vertrauensanker vorgeschoben ist. Das Skript macht das automatisch (ein signierter Commit von dir, zwei Pull Requests) und prüft am Ende, dass alles wieder grün baut. Nur mit funktionierendem Fork ausführen.
+
 ## Auf dem eigenen GitHub-Account ausprobieren (Forks)
 
 > Die ausführliche Anleitung folgt. Schon jetzt fest steht, was nach dem Forken der drei Repositories nötig ist:

@@ -9,6 +9,9 @@ source "$TESTBED_DIR/versions.env"
 # Die drei Repositories liegen nebeneinander im selben Ordner.
 EXAMPLE_APP_DIR="$TESTBED_DIR/../example-app"
 SECURE_WORKFLOWS_DIR="$TESTBED_DIR/../secure-workflows"
+# Pfade normalisieren (ohne /../), damit ausgegebene Befehle lesbar sind.
+[ -d "$EXAMPLE_APP_DIR" ] && EXAMPLE_APP_DIR="$(cd "$EXAMPLE_APP_DIR" && pwd)"
+[ -d "$SECURE_WORKFLOWS_DIR" ] && SECURE_WORKFLOWS_DIR="$(cd "$SECURE_WORKFLOWS_DIR" && pwd)"
 GITHUB_OWNER="lma-hh-01"
 
 CLUSTER_NAME="testbed"
