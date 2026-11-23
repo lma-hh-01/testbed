@@ -10,7 +10,7 @@ SCENARIO_DIR="$WORK_DIR/scenarios"
 mkdir -p "$SCENARIO_DIR"
 RESULTS_FILE="${RESULTS_FILE:-$WORK_DIR/scenario-results.csv}"
 mkdir -p "$(dirname "$RESULTS_FILE")"
-RESULTS_HEADER="timestamp,variant,attack_class,case,hypothesis,result,as_expected,detail,artifact,repo_state"
+RESULTS_HEADER="timestamp,variant,attack_class,case,result,detail,artifact,repo_state"
 
 # --- Output -------------------------------------------------------------------
 
@@ -140,14 +140,6 @@ try_permission() {
 
 # --- Results ------------------------------------------------------------------
 
-# The hypothesis from chapter 5 names the variant from which an attack is
-# defended (e.g. V1), or "all" if it is supposed to be defended in every variant.
-defense_expected() {
-  local hypothesis="$1"
-  [ "$hypothesis" = all ] && return 0
-  [ "${VARIANT#v}" -ge "${hypothesis#V}" ]
-}
-
 csv_field() {
   local value="${1//$'\n'/ }"
   printf '"%s"' "${value//\"/\"\"}"
@@ -164,30 +156,17 @@ repo_state() {
 record_result() {
   local ak="$1"
   local case="$2"
-  local hypothesis="$3"
-  local result="$4"
-  local detail="$5"
-  local artifact="$6"
-
-  local defended=no expected=no as_expected=no
-  [ "$result" != allowed ] && defended=yes
-  defense_expected "$hypothesis" && expected=yes
-  [ "$defended" = "$expected" ] && as_expected=yes
+  local result="$3"
+  local detail="$4"
+  local artifact="$5"
 
   [ -f "$RESULTS_FILE" ] || echo "$RESULTS_HEADER" > "$RESULTS_FILE"
-  printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$VARIANT" "$ak" "$case" "$hypothesis" "$result" \
-    "$as_expected" "$(csv_field "$detail")" "$(csv_field "$artifact")" "$(csv_field "$(repo_state)")" \
+  printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$VARIANT" "$ak" "$case" "$result" \
+    "$(csv_field "$detail")" "$(csv_field "$artifact")" "$(csv_field "$(repo_state)")" \
     >> "$RESULTS_FILE"
 
   info "Result: $result${detail:+ ($detail)}"
-  local hypothesis_text="defended from $hypothesis on"
-  [ "$hypothesis" = all ] && hypothesis_text="defended in all variants"
-  if [ "$as_expected" = yes ]; then
-    info "As expected (hypothesis: $hypothesis_text)."
-  else
-    info "DEVIATION from the hypothesis ($hypothesis_text)."
-  fi
 }
 
 # =============================================================================
@@ -302,12 +281,12 @@ deploy_commit_to_cluster() {
 # produced, the attack counts as stopped in the pipeline; otherwise the image of
 # this commit is deployed and checked at admission.
 evaluate_from_state() {
-  local ak="$1" case="$2" hypothesis="$3" state_name="$4"
+  local ak="$1" case="$2" state_name="$3"
   load_variant_state "$state_name"
 
   if [ "$SV_RESULT" = build-aborted ]; then
     RESULT=build-aborted
-    record_result "$ak" "$case" "$hypothesis" "$RESULT" "$SV_NOTE" "no image built"
+    record_result "$ak" "$case" "$RESULT" "$SV_NOTE" "no image built"
     return
   fi
 
@@ -318,7 +297,7 @@ evaluate_from_state() {
   local manifest="$SCENARIO_DIR/$case.yaml"
   render_app_deployment "$SV_DEPLOY" "$DEPLOY_IMAGE" > "$manifest"
   try_apply "$manifest"
-  record_result "$ak" "$case" "$hypothesis" "$RESULT" "$DETAIL" "$DEPLOY_IMAGE"
+  record_result "$ak" "$case" "$RESULT" "$DETAIL" "$DEPLOY_IMAGE"
   remove_manifest "$manifest"
 }
 

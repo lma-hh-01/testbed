@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # AK-02/03: Commit with a forged author.
 # Two cases, both as a real attack on example-app/main:
-#   forged-author (hyp V1): a commit with a forged author and without a valid
+#   forged-author: a commit with a forged author and without a valid
 #     signature is merged. The commit verification in the workflow stops the
 #     build, no image is produced -> defended from V1 on.
-#   check-removed (hyp V2): in the same go the attacker removes the commit
+#   check-removed: in the same go the attacker removes the commit
 #     verification from the app workflow (only possible in V1). V1 then builds
 #     and signs anyway -> not defended. V2/V3 keep verifying in the central
 #     workflow -> defended from V2 on.
@@ -26,7 +26,7 @@ ANCHOR_BRANCH_APP="ak0203-anchor-example-app"
 RESTORE_TITLE="AK-02/03 restore: reset code and move trust anchor"
 
 describe "$AK" "Commit with a forged author" \
-  "A commit with a forged author is merged into main (forged-author), in the second case additionally with the commit verification removed from the app workflow (check-removed). Expected: forged-author defended from V1 on (the build stops), check-removed only from V2 on (the verification then lives in the central workflow)."
+  "A commit with a forged author is merged into main (forged-author), in the second case additionally with the commit verification removed from the app workflow (check-removed)."
 
 github_scenario_guard
 
@@ -145,5 +145,5 @@ if [ "$PHASE" = restore-prepared ]; then
 fi
 
 # PHASE=done: evaluate both cases against the running variant.
-evaluate_from_state "$AK" forged-author V1 "${STATE}-forged-author"
-evaluate_from_state "$AK" check-removed V2 "${STATE}-check-removed"
+evaluate_from_state "$AK" forged-author "${STATE}-forged-author"
+evaluate_from_state "$AK" check-removed "${STATE}-check-removed"

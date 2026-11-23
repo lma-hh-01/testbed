@@ -8,10 +8,9 @@
 source "$(dirname "$0")/lib.sh"
 
 AK="AK-12"
-HYPOTHESIS=all
 
 describe "$AK" "Tamper with the verification" \
-  "The deployer tries to change the verification at admission. Checked is whether its permissions allow that. Expected: denied in all variants, because the deployer may only manage application resources in its namespace. From V1 on the target objects actually exist, but the protection is the same in every variant."
+  "The deployer tries to change the verification at admission. Checked is whether its permissions allow that. The permissions of the deployer are the same in every variant, the target objects only exist from V1 on."
 
 attack() {
   local case="$1"
@@ -21,7 +20,7 @@ attack() {
 
   step "Case '$case': $verb $resource${namespace:+ (namespace $namespace)}"
   try_permission "$verb" "$resource" "$namespace"
-  record_result "$AK" "$case" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$resource"
+  record_result "$AK" "$case" "$RESULT" "$DETAIL" "$resource"
 }
 
 attack change-policy         delete imagevalidatingpolicies.policies.kyverno.io  ""

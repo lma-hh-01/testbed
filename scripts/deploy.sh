@@ -21,6 +21,11 @@ find_last_successful_commit() {
 
 # ORAS gets a login file of its own. This leaves the Docker configuration of the
 # host untouched, and ghcr is read anonymously.
+# --recursive also copies the signature and attestations, which point to the
+# image via their "subject" field. ghcr does not offer the referrers API and
+# lists them under a tag derived from the digest (referrers tag schema of the
+# OCI distribution spec). zot offers the referrers API, which Kyverno uses to
+# find them. ORAS converts between the two on copy.
 copy_to_zot() {
   local source="$1"
   local target_tag="$2"

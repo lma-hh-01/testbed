@@ -9,14 +9,11 @@ source "$(dirname "$0")/lib.sh"
 
 AK="AK-10"
 CASE="typosquat-image"
-# Chapter 5 assigns AK-10 to variant V3 (dependency confusion). The image part is
-# expected to be defended already from V1 on, which is to be shown as a deviation.
-HYPOTHESIS=V3
 REPOSITORY="ngnix"
 TAG="1.27"
 
 describe "$AK" "Typosquat image" \
-  "A foreign image is stored in zot under the misspelled name '$REPOSITORY' and deployed by digest. Hypothesis from chapter 5: defended from V3 on. Expected from the implementation: already from V1 on, because the signature of the pipeline is missing (AF-13, not AF-11)."
+  "A foreign image is stored in zot under the misspelled name '$REPOSITORY' and deployed by digest."
 
 step "Store a foreign image under the misspelled name '$REPOSITORY'"
 oras cp --from-registry-config "$ORAS_AUTH_FILE" --to-registry-config "$ORAS_AUTH_FILE" \
@@ -29,5 +26,5 @@ step "Deploy the typosquat image as the deployer"
 manifest="$SCENARIO_DIR/ak10b.yaml"
 workload_manifest deployment ak10b-typosquat "$image" > "$manifest"
 try_apply "$manifest"
-record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$image"
+record_result "$AK" "$CASE" "$RESULT" "$DETAIL" "$image"
 remove_manifest "$manifest"

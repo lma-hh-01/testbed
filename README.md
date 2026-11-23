@@ -68,13 +68,13 @@ Das Ergebnis jedes Szenarios ist eines von:
 - **rbac-denied** – die Rechtevergabe im Cluster hat die Aktion verhindert,
 - **correct-version** – nur bei AK-10a: trotz Angriff wurde die richtige Paketversion eingebaut.
 
-Die Ergebnisse werden als Tabelle angezeigt und in `.work/scenario-results.csv` geschrieben (anderer Ort mit `make scenario AK=.. RESULTS=results/scenario-results.csv`). Jede Zeile nennt Variante, Szenario, erwartetes und tatsächliches Ergebnis.
+Jedes Ergebnis wird ausgegeben und in `.work/scenario-results.csv` geschrieben (anderer Ort mit `make scenario AK=.. RESULTS=results/scenario-results.csv`). Jede Zeile nennt Variante, Angriffsklasse, Fall und Ergebnis. Die Ergebnisse des Messlaufs vom 22.11.2026 stehen in `results/scenario-results.csv`, die Spalte „Ergebnis im Messlauf“ in den Tabellen unten fasst sie zusammen.
 
 ### Lokale Szenarien
 
 Diese laufen vollständig auf dem Rechner, ohne GitHub. Ein frisch gebautes oder verändertes Image wird direkt in die lokale Registry gelegt und als eingeschränkter Deployer deployt.
 
-| Befehl | Angriff | Erwartet | Woran erkennbar |
+| Befehl | Angriff | Ergebnis im Messlauf | Woran erkennbar |
 |---|---|---|---|
 | `make scenario AK=07` | Image außerhalb der Pipeline gebaut und direkt in die Registry gelegt | ab V1 abgelehnt (Signatur der Pipeline fehlt) | Ergebnis `admission-denied`, Meldung „is not signed“ |
 | `make scenario AK=08` | signiertes Image verändert, Original-Signatur umgehängt | ab V1 abgelehnt (Signatur deckt den neuen Digest nicht) | `admission-denied`, Digest-Bindung |
@@ -90,12 +90,12 @@ Diese greifen echt über GitHub an (Branches, Pull Requests, Workflow-Starts) un
 
 Einige dieser Szenarien bringen den Angriff über einen **signierten Commit** auf `main` ein. Das Skript bereitet die Änderung vor und nennt den genauen `git commit`-Befehl, den du ausführst (gitsign öffnet dazu einen Browser-Login); danach rufst du dasselbe `make scenario` erneut auf. Zum Schluss nimmt ein ebenfalls signierter Revert die Änderung wieder zurück.
 
-| Befehl | Angriff | Erwartet |
+| Befehl | Angriff | Ergebnis im Messlauf |
 |---|---|---|
 | `make scenario AK=05` | Build von einem inoffiziellen Feature-Branch; eigene Build-Schritte auf `main` | Feature-Branch ab V1, eigene Build-Schritte ab V2 abgewehrt |
 | `make scenario AK=06` | zusätzlicher Job signiert ein manipuliertes Image | ab V2 abgewehrt (V3 schon in der Pipeline durch zizmor) |
 | `make scenario AK=10a` | Dependency Confusion: `company-utils 99.0.0` in die öffentliche Paketquelle | bis V2 durchgelassen (Seite zeigt 99.0.0), ab V3 bleibt es bei 1.0.0 |
-| `make scenario AK=11` | verwundbare Abhängigkeit (Werkzeug 0.15.2) hinzugefügt | bis V2 durchgelassen, ab V3 am Schwachstellen-Gate abgelehnt |
+| `make scenario AK=11` | verwundbare Abhängigkeit (Werkzeug 0.15.2) hinzugefügt | bis V2 durchgelassen; in V3 stoppt das Schwachstellen-Gate die Signatur, das unsignierte Image wird an der Admission abgelehnt |
 | `make scenario AK=02-03` | Commit mit gefälschtem Autor (und Variante: Prüfung im App-Workflow entfernt) | gefälschter Autor ab V1, mit entfernter Prüfung erst ab V2 abgewehrt |
 
 > **Achtung AK-02-03:** Dieses Szenario bringt gefälschte Commits dauerhaft in die Historie; danach bauen V1–V3 erst wieder, wenn der Vertrauensanker vorgeschoben ist. Das Skript macht das automatisch (ein signierter Commit von dir, zwei Pull Requests) und prüft am Ende, dass alles wieder grün baut. Nur mit funktionierendem Fork ausführen.

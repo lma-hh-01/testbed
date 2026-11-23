@@ -19,8 +19,6 @@ AK="AK-11"
 # shellcheck disable=SC2034 # AK_FLAG is read by the driver in lib.sh (re-run hint)
 AK_FLAG="11"
 CASE="vulnerable-dependency"
-# Chapter 5 assigns the vulnerable dependency to the gate in variant V3.
-HYPOTHESIS=V3
 BRANCH="ak11-vulnerable-dependency"
 TITLE="AK-11: add the vulnerable dependency Werkzeug 0.15.2"
 WERKZEUG_VERSION="0.15.2"
@@ -29,7 +27,7 @@ WERKZEUG_VERSION="0.15.2"
 PYTHON_IMAGE="docker.io/library/python:3.14-slim@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d"
 
 describe "$AK" "Vulnerable dependency" \
-  "The application gets a dependency with a known vulnerability (Werkzeug $WERKZEUG_VERSION). Expected: in V0 to V2 the image is built, signed and allowed. In V3 the vulnerability gate fails, the image stays unsigned and is denied at admission."
+  "The application gets a dependency with a known vulnerability (Werkzeug $WERKZEUG_VERSION)."
 
 github_scenario_guard
 
@@ -63,7 +61,7 @@ prepare_vulnerable_dependency() {
 # same effect as a missing image, but visible here as an admission denial
 # instead of a build abort).
 evaluate_ak11() {
-  evaluate_from_state "$AK" "$CASE" "$HYPOTHESIS" ak11
+  evaluate_from_state "$AK" "$CASE" ak11
 }
 
 run_signed_app_scenario ak11 "$BRANCH" "$TITLE" prepare_vulnerable_dependency evaluate_ak11

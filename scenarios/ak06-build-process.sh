@@ -21,7 +21,7 @@ BRANCH="ak06-build-process"
 TITLE="AK-06: additional job signs a manipulated image"
 
 describe "$AK" "Compromise of the build process" \
-  "An additional job builds a manipulated image and signs it with the identity of the app workflow. Expected: in V1 the admission accepts the image (same identity), from V2 on it denies it, because only the central workflow may sign."
+  "An additional job in the workflow of the app repo builds a manipulated image and, from V1 on, signs it with the identity of the app workflow."
 
 github_scenario_guard
 
@@ -115,8 +115,7 @@ prepare_build_process() {
 }
 
 evaluate_ak06() {
-  evaluate_from_state "$AK" app-repo-extra-job V2 ak06
+  evaluate_from_state "$AK" app-repo-extra-job ak06
 }
 
-# Hypothesis case 1: from V2 on (only the central workflow signs).
 run_signed_app_scenario ak06 "$BRANCH" "$TITLE" prepare_build_process evaluate_ak06

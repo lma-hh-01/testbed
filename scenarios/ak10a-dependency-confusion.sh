@@ -18,8 +18,6 @@ AK="AK-10"
 # shellcheck disable=SC2034 # AK_FLAG is read by the driver in lib.sh (re-run hint)
 AK_FLAG="10a"
 CASE="dependency-confusion"
-# Chapter 5 assigns dependency confusion to variant V3 (lockfile with hash).
-HYPOTHESIS=V3
 BRANCH="ak10a-dependency-confusion"
 TITLE="AK-10a: plant company-utils 99.0.0 in the public package index"
 
@@ -28,7 +26,7 @@ TITLE="AK-10a: plant company-utils 99.0.0 in the public package index"
 PYTHON_IMAGE="docker.io/library/python:3.14-slim@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d"
 
 describe "$AK" "Dependency confusion" \
-  "A package with the same name company-utils 99.0.0 is put into the public package index. Expected: in V0 to V2 pip installs the higher version (the page shows 99.0.0), the signed image is allowed. In V3 the lockfile with hash pins 1.0.0, the page keeps showing 1.0.0."
+  "A package with the same name company-utils 99.0.0 is put into the public package index. The page of the application shows which version was built into the image."
 
 github_scenario_guard
 
@@ -84,7 +82,7 @@ evaluate_dependency_confusion() {
   load_variant_state ak10a
   if [ "$SV_RESULT" = build-aborted ]; then
     RESULT=build-aborted
-    record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$SV_NOTE" "no image built"
+    record_result "$AK" "$CASE" "$RESULT" "$SV_NOTE" "no image built"
     return
   fi
 
@@ -122,7 +120,7 @@ evaluate_dependency_confusion() {
     *) RESULT=allowed
        DETAIL="unexpected company-utils version: ${line:-unknown}" ;;
   esac
-  record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$DEPLOY_IMAGE"
+  record_result "$AK" "$CASE" "$RESULT" "$DETAIL" "$DEPLOY_IMAGE"
 
   deployer_kubectl delete -f "$manifest" --ignore-not-found --wait=false >/dev/null 2>&1 || true
 }

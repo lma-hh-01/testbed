@@ -22,7 +22,7 @@ FEATURE_BRANCH="ak05-feature-branch"
 INJECTED_VARIANT="ak05b-injected"
 
 describe "$AK" "Manipulation of the build input parameters" \
-  "Case (a): build from an unofficial feature branch via workflow_dispatch. Case (b): own build steps on main. Hypothesis from chapter 5: defended from V2 on. Expected from the implementation: (a) already from V1 on (only main is built), (b) from V2 on (central workflow)."
+  "Case (a): build from an unofficial feature branch via workflow_dispatch (feature-branch). Case (b): own build steps on main (own-build-steps)."
 
 github_scenario_guard
 
@@ -62,9 +62,8 @@ attack_feature_branch() {
   done
 }
 
-# Hypothesis case (a): from V1 on (only main is built).
 attack_done ak05a || attack_feature_branch
-evaluate_from_state "$AK" feature-branch V1 ak05a
+evaluate_from_state "$AK" feature-branch ak05a
 
 # --- Case (b): own build steps on main ---------------------------------------
 
@@ -146,10 +145,9 @@ prepare_own_build_steps() {
 }
 
 evaluate_ak05b() {
-  evaluate_from_state "$AK" own-build-steps V2 ak05b
+  evaluate_from_state "$AK" own-build-steps ak05b
 }
 
-# Hypothesis case (b): from V2 on (the build lives in the central workflow).
 run_signed_app_scenario ak05b ak05-own-build-steps \
   "AK-05b: own build steps on main (replace the central call)" \
   prepare_own_build_steps evaluate_ak05b

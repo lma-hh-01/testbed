@@ -8,12 +8,11 @@ source "$(dirname "$0")/lib.sh"
 
 AK="AK-09"
 CASE="tag-moved"
-HYPOTHESIS=V1
 REPOSITORY="example-app-$VARIANT"
 TAG="ak09"
 
 describe "$AK" "Tag mutation in zot" \
-  "An existing tag is moved to a planted image and the deployment is attempted via this tag. Expected: in V0 the planted image runs, because the deployment uses the tag. From V1 on Kyverno denies the tag reference and requires a digest."
+  "An existing tag is moved to a planted image and the deployment is attempted via this tag."
 
 step "Store the original image under the tag '$TAG'"
 oras cp --from-registry-config "$ORAS_AUTH_FILE" --to-registry-config "$ORAS_AUTH_FILE" \
@@ -36,5 +35,5 @@ step "Attempt the deployment via the (moved) tag"
 manifest="$SCENARIO_DIR/ak09.yaml"
 workload_manifest deployment ak09-tag "$ZOT_CLUSTER_ADDRESS/$REPOSITORY:$TAG" > "$manifest"
 try_apply "$manifest"
-record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$ZOT_CLUSTER_ADDRESS/$REPOSITORY:$TAG"
+record_result "$AK" "$CASE" "$RESULT" "$DETAIL" "$ZOT_CLUSTER_ADDRESS/$REPOSITORY:$TAG"
 remove_manifest "$manifest"

@@ -8,12 +8,11 @@ source "$(dirname "$0")/lib.sh"
 
 AK="AK-08"
 CASE="signature-transplanted"
-HYPOTHESIS=V1
 AUTH="$ORAS_AUTH_FILE"
 HOST_REPO="$ZOT_HOST_ADDRESS/example-app-$VARIANT"
 
 describe "$AK" "Signature copied onto a tampered image" \
-  "The signed image is changed and gets the original signature attached. Expected: in V0 it runs (no verification), from V1 on the admission denies it, because the signature does not cover the changed digest."
+  "The signed image is changed and gets the original signature attached."
 
 step "Provide the legitimate, signed image of the variant"
 orig_ref="$(pipeline_image_in_zot)"
@@ -48,5 +47,5 @@ image="$ZOT_CLUSTER_ADDRESS/example-app-$VARIANT@$mod"
 manifest="$SCENARIO_DIR/ak08.yaml"
 workload_manifest deployment ak08-manipulated "$image" > "$manifest"
 try_apply "$manifest"
-record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$image"
+record_result "$AK" "$CASE" "$RESULT" "$DETAIL" "$image"
 remove_manifest "$manifest"

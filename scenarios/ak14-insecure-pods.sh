@@ -7,10 +7,9 @@
 source "$(dirname "$0")/lib.sh"
 
 AK="AK-14"
-HYPOTHESIS=V3
 
 describe "$AK" "Insecure pod configuration" \
-  "The signed image is deployed with an insecure pod configuration. Expected: up to V2 the admission lets it through, because only the image is checked. From V3 on the pod security policy denies the configuration."
+  "The signed image is deployed with an insecure pod configuration (privileged, as root, with privilege escalation, in the host network)."
 
 step "Provide the signed image of the variant"
 IMAGE="$(pipeline_image_in_zot)"
@@ -24,7 +23,7 @@ attack() {
   step "Case '$case'"
   workload_manifest pod "ak14-$case" "$IMAGE" | yq "$patch" > "$manifest"
   try_apply "$manifest"
-  record_result "$AK" "$case" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$IMAGE"
+  record_result "$AK" "$case" "$RESULT" "$DETAIL" "$IMAGE"
   remove_manifest "$manifest"
 }
 

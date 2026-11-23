@@ -8,13 +8,11 @@ source "$(dirname "$0")/lib.sh"
 
 AK="AK-07"
 CASE="locally-built"
-# Chapter 5 expects the defense only with the provenance in V2.
-HYPOTHESIS=V2
 REPOSITORY="example-app-$VARIANT"
 TAG="ak07-local"
 
 describe "$AK" "Locally built image" \
-  "The application is built locally, pushed directly to zot and deployed by digest. Hypothesis from chapter 5: defended from V2 on (provenance). Expected from the implementation: already from V1 on, because the signature of the pipeline is missing."
+  "The application is built locally, pushed directly to zot and deployed by digest."
 
 step "Build the application locally (outside of the pipeline)"
 layout="$SCENARIO_DIR/ak07-image"
@@ -31,5 +29,5 @@ step "Deploy the locally built image as the deployer"
 manifest="$SCENARIO_DIR/ak07.yaml"
 workload_manifest deployment ak07-local "$image" > "$manifest"
 try_apply "$manifest"
-record_result "$AK" "$CASE" "$HYPOTHESIS" "$RESULT" "$DETAIL" "$image"
+record_result "$AK" "$CASE" "$RESULT" "$DETAIL" "$image"
 remove_manifest "$manifest"
